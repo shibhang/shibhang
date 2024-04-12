@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Movie Recommendendation System Using Machine Learning</title>
+    <link rel="stylesheet" href="../static/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"
+    />
+    <style>
+      .navbar {
+        background-color: #030328;
+        color: #fff;
+        padding: 30px;
+        display: flex;
+        justify-content: space-evenly;
+        align-items: center;
+      }
+
+      .nav-item {
+        position: relative;
+      }
+
+      .nav-link {
+        text-decoration: none;
+        color: inherit;
+        font-weight: bold;
+      }
+
+      .nav-link:hover {
+        color: #ffd700;
+      }
+
+      .dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+      }
+
+      .dropdown-content {
+        display: flex;
+        flex-wrap: wrap;
+        width: 350px;
+        height: auto;
+        padding: 10px;
+      }
+
+      .filter-item {
+        color: black;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+
+      .filter-item:hover {
+        background-color: #f0f0f0;
+      }
+
+      /* Media query for small screens */
+      @media (max-width: 768px) {
+        .navbar {
+          padding: 15px;
+          justify-content: center;
+        }
+
+        .nav-item {
+          margin: 0 10px;
+        }
+
+        .dropdown {
+          display: block;
+          position: static;
+          width: 100%;
+          box-shadow: none;
+          border: none;
+          left: auto;
+          margin-top: 10px;
+        }
+
+        .dropdown-content {
+          display: flex;
+          flex-direction: column;
+          flex-wrap: wrap;
+          padding: 10px;
+          justify-content: space-between;
+          text-align: left;
+          width: 90%;
+          max-height: 100px;
+          overflow-x: auto;
+        }
+
+        .dropdown-content::-webkit-scrollbar {
+          display: none;
+        }
+        .dropdown-content {
+          scrollbar-width: none;
+        }
+
+        .dropdown-content::-webkit-scrollbar {
+          width: 0;
+        }
+
+        .dropdown-content::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .dropdown-content::-webkit-scrollbar-thumb {
+          background: transparent;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="nav-item" id="genreNavItem">
+        <a href="#" class="nav-link">Genre</a>
+        <div class="dropdown" id="genreDropdown">
+          <div class="dropdown-content" id="genreContent">
+            <!-- Genre filters will be populated dynamically here -->
+          </div>
+        </div>
+      </div>
+      <div class="nav-item" id="countryNavItem">
+        <a href="#" class="nav-link">Country</a>
+        <div class="dropdown" id="countryDropdown">
+          <div class="dropdown-content" id="countryContent">
+            <!-- Country filters will be populated dynamically here -->
+          </div>
+        </div>
+      </div>
+      <div class="nav-item" id="yearNavItem">
+        <a href="#" class="nav-link">Year</a>
+        <div class="dropdown" id="yearDropdown">
+          <div class="dropdown-content" id="yearContent">
+            <!-- Year filters will be populated dynamically here -->
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div class="container">
+      <div class="content">
+        <h1 class="my-4">Location Based Movie Recommender</h1>
+        <div id="location">
+          Your Location: <span id="userLocation">Unknown</span>
+        </div>
+        <form id="movieForm" class="mb-4">
+          <input
+            type="text"
+            id="movieTitle"
+            name="movieTitle"
+            placeholder="What are you looking for?"
+          />
+          <button type="submit" class="primary-btn">Search</button>
+        </form>
+        <div id="automaticRecommendations" class="recommendations-list">
+          <h2>Featured Movies</h2>
+          <div id="autoLoading" class="loader" style="display: none"></div>
+          <div id="automaticRecommendationsList"></div>
+        </div>
+        <div id="recommendations" class="recommendations-list">
+          <h2>Recommended Movies</h2>
+          <div id="movieLoading" class="loader" style="display: none"></div>
+          <div id="recommendationsList"></div>
+        </div>
+        <p id="promptMessage" class="error-message"></p>
+      </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+      // Function to populate filters
+      function populateFilters(filterType, filterList) {
+        var filterElement = $("#" + filterType + "NavItem");
+        var dropdownElement = $("#" + filterType + "Dropdown");
+
+        filterElement.click(function () {
+          $(".dropdown").not(dropdownElement).hide();
+          $("#" + filterType + "Content").empty();
+          $.each(filterList, function (index, item) {
+            var listItem = '<div class="filter-item">' + item + "</div>";
+            $("#" + filterType + "Content").append(listItem);
+          });
+          dropdownElement.toggle();
+        });
+      }
+
+      $(document).ready(function () {
+        // Populate genre filters
+        var genres = [
+          "Action",
+          "Adventure",
+          "Animation",
+          "Biography",
+          "Comedy",
+          "Drama",
+          "Documentary",
+          "Fantasy",
+          "Family",
+          "Horror",
+          "Musical",
+          "Romance",
+          "Sci-Fi",
+          "Thriller",
+          "Western",
+        ];
+        populateFilters("genre", genres);
+
+        // Populate country filters
+        var countries = [
+          "USA",
+          "UK",
+          "Japan",
+          "Australia",
+          "France",
+          "Germany",
+          "Russia",
+          "China",
+          "Canada",
+          "Netherlands",
+          "India",
+          "Spain",
+          "New Zealand",
+          "South Korea",
+        ];
+        populateFilters("country", countries);
+
+        // Populate year filters
+        var currentYear = new Date().getFullYear();
+        var startYear = 1950;
+        var years = [];
+        for (var year = currentYear; year >= startYear; year--) {
+          years.push(year);
+        }
+        populateFilters("year", years);
+      });
+    </script>
+  </body>
+</html>
